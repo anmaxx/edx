@@ -1,0 +1,96 @@
+mongo_logappend: true
+
+#This way, when mongod receives a SIGUSR1, it'll close and reopen its log file handle
+mongo_logrotate: reopen
+
+mongo_version: 3.2.16
+mongo_port: "27017"
+mongo_extra_conf: ''
+mongo_key_file: '/etc/mongodb_key'
+pymongo_version: 3.2.2
+
+mongo_data_dir: "{{ COMMON_DATA_DIR }}/mongo"
+mongo_log_dir: "{{ COMMON_LOG_DIR }}/mongo"
+mongo_journal_dir: "{{ COMMON_DATA_DIR }}/mongo/mongodb/journal"
+mongo_user: mongodb
+
+MONGODB_REPO: "deb http://repo.mongodb.org/apt/ubuntu {{ ansible_distribution_release }}/mongodb-org/3.2 multiverse"
+MONGODB_APT_KEY: "7F0CEB10"
+MONGODB_APT_KEYSERVER: "keyserver.ubuntu.com"
+MONGO_CLUSTER_KEY: '6n/9kCUREDjlXaJuHW97HIQV9Egh1Aa9kS4+mpTteasGuUwIGjPhotSuhj8t0NZ4
+iW5XnvOBsvzRqB/Suyil7gc+JnIJcW1vRiGNPJSCgixePFDpo0ItxEwIFE6X49Gb
+VedOBQgWFV9ApvTKUStj7tlq0Pe/Q6WscVDIc+74kgb0smkQ6G9YrBVNfhpB1Z4+
+WLROVMgkaVEEHR+a5/mkaEkFA/qIFoIwL7voq/Jr1uh91WaIW2cnnFLdrQ8iCQu7
+WtHOBL04qzEcymw2p9j/phR/v/ufzHmYc9EQ89MKctySLkt1yrUu3wb9o4WWHA/U
+uE1Ud4R4Tg1HFeBunErxZDfW6seHop3xPBQSVqUFEwIjyNZwT+tqTaWUDc5O8RW7
+RV470CGyc8ECiAWAYBrctHYj8YyDPsC4fRBugkr+/CuGfSrCE0RcSE+lVQAVHLyc
+QHFlWj6R2TFDBPK2hU6c/LxS3QHmjG53RD2ckb8V2l4FgIEAXL58emC2N1JhGf+O
+8kqIojobCHuwXqnTXKN/s6YE4cT2U6lsKGyMJlqlcNajtX/0i6qf9l0RAhNMjjF3
+Rtrx3seE+7CnYNo15rM26WpcNEPkAJJ7QIJSeiumA8fJz8sk6w+fnJHKvVeExGgY
+/xwaDokY7iKWYAs7nZUsPWY6HB5e1nQmlg2Nfwu+ScBSO0nPcwepQAJk9uHj1dD2
+O7eqxczt7I2MCavF8KQAIe8TaBZNM3rsqFjHT1xF3UOP50CndWNkAtk1PWh4mcii
+rKvN1/dBplAcZjFfCebsZZorjAV0sgUD1f1kxPlDMyxO1TyBd6NHic8IOiMLynmV
+xw+k6ffb2N2Yso8ZvT6Auv/slL6L8SxoCzi+HKQ0bGJOFKSGRLrdbE591TlB9st9
+Kp3ixE4thM99CzqalZPE5+YKHO2iAXvwjaDc7zYSpl/+RY2hF/rGMn+1qQgGLJqN
+jMyvP+OygKsCj34XYoOVL70juFfgPdutUMJrvlM12UHJdk3/'
+ 
+mongodb_debian_pkgs:
+  - "mongodb-org={{ mongo_version }}"
+  - "mongodb-org-server={{ mongo_version }}"
+  - "mongodb-org-shell={{ mongo_version }}"
+  - "mongodb-org-mongos={{ mongo_version }}"
+  - "mongodb-org-tools={{ mongo_version }}"
+
+
+# Vars Meant to be overridden
+MONGO_ADMIN_USER: 'admin'
+MONGO_ADMIN_PASSWORD: 'password'
+MONGO_USERS:
+  - user: cs_comments_service
+    password: password
+    database: cs_comments_service
+    roles: readWrite
+  - user: edxapp
+    password: password
+    database: edxapp
+    roles: readWrite
+
+# This default setting is approriate for a single machine installation
+# This will need to be overridden for setups where mongo is on its own server
+# and/or you are configuring mongo replication. If the override value is
+# 0.0.0.0 mongo will listen on all IPs. The value may also be set to a
+# specific IP.
+MONGO_BIND_IP: 0.0.0.0
+
+MONGO_REPL_SET: "rs0"
+MONGO_AUTH: true
+
+# Cluster member configuration
+# Fed directly into mongodb_replica_set module
+MONGO_RS_CONFIG:
+  members: 
+    - host: "{{ groups['database'][0] }}"
+    - host: "{{ groups['database'][1] }}" 
+# Storage engine options in 3.2: "mmapv1" or "wiredTiger"
+# 3.2 and 3.4 default to wiredTiger
+MONGO_STORAGE_ENGINE: "wiredTiger"
+
+# List of dictionaries as described in the mount_ebs role's default
+# for the volumes.
+# Useful if you want to store your mongo data and/or journal on separate
+# disks from the root volume.  By default, they will end up mongo_data_dir
+# on the root disk.
+MONGO_VOLUMES: []
+
+# WiredTiger takes a number of optional configuration settings
+# which can be defined as a yaml structure in your secure configuration.
+MONGO_STORAGE_ENGINE_OPTIONS: !!null
+
+mongo_logpath: "{{ mongo_log_dir }}/mongodb.log"
+mongo_dbpath: "{{ mongo_data_dir }}/mongodb"
+
+# In environments that do not require durability (devstack / Jenkins)
+# you can disable the journal to reduce disk usage
+mongo_enable_journal: true
+
+MONGO_LOG_SERVERSTATUS: true
